@@ -1,0 +1,395 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import instance from "../../../../utils/axios";
+import { FiEdit2, FiAward } from 'react-icons/fi';
+
+export default function TrainerProfileUpdated() {
+  const router = useRouter();
+  const [trainerData, setTrainerData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    dateOfBirth: "",
+    phoneNumber: "",
+    bio: "",
+    yearsOfExperience: "",
+    pricePerSession: "",
+    profilePic: "",
+    availableDays: [],
+    availableInterval: {},
+    role: "",
+    isVerified: false
+  });
+
+  const [certificates, setCertificates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [bioEditing, setBioEditing] = useState(false);
+  const [personalEditing, setPersonalEditing] = useState(false);
+  const [jobEditing, setJobEditing] = useState(false);
+
+  useEffect(() => {
+    fetchTrainerData();
+    fetchCertificates();
+  }, []);
+
+  const fetchTrainerData = async () => {
+    try {
+      const response = await instance.get("/api/v1/users/me");
+      if (response.data && response.data.user) {
+        setTrainerData(response.data.user);
+      }
+    } catch (error) {
+      console.error("Error fetching trainer data:", error);
+    }
+  };
+
+  const fetchCertificates = async () => {
+    try {
+      const response = await instance.get('/api/v1/certificates');
+      if (response.data && Array.isArray(response.data)) {
+        setCertificates(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await instance.post('/api/v1/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data && response.data.data) {
+        const imageUrl = response.data.data;
+        await instance.patch("/api/v1/users/me", {
+          profilePic: imageUrl
+        });
+        
+        setTrainerData(prev => ({
+          ...prev,
+          profilePic: imageUrl
+        }));
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert('Failed to upload image');
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setTrainerData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async (section) => {
+    try {
+      let updateData = {};
+      
+      if (section === 'personal') {
+        updateData = {
+          firstName: trainerData.firstName,
+          lastName: trainerData.lastName,
+          phoneNumber: trainerData.phoneNumber,
+          dateOfBirth: trainerData.dateOfBirth
+        };
+      } else if (section === 'job') {
+        updateData = {
+          yearsOfExperience: trainerData.yearsOfExperience,
+          pricePerSession: trainerData.pricePerSession,
+          availableDays: trainerData.availableDays,
+          availableInterval: trainerData.availableInterval
+        };
+      } else if (section === 'bio') {
+        updateData = {
+          bio: trainerData.bio
+        };
+      }
+
+      const response = await instance.patch("/api/v1/users/me", updateData);
+      if (response.data && response.data.user) {
+        setTrainerData(prev => ({ ...prev, ...response.data.user }));
+        alert('Profile updated successfully');
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert('Failed to update profile');
+    }
+  };
+
+  const handleCertificateEdit = async (certId, updatedData) => {
+    try {
+      const response = await instance.patch(`/api/v1/certificates/${certId}`, updatedData);
+      if (response.data) {
+        fetchCertificates(); // Refresh certificates after update
+      }
+    } catch (error) {
+      console.error("Error updating certificate:", error);
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Profile Header */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex">
+          <div className="mr-6">
+            <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden">
+              <Image
+                src={trainerData.profilePic || "https://thumbs.dreamstime.com/b/default-profile-picture-avatar-photo-placeholder-vector-illustration-default-profile-picture-avatar-photo-placeholder-vector-189495158.jpg"}
+                alt="Profile"
+                width={96}
+                height={96}
+                className="object-cover w-full h-full"
+                unoptimized
+              />
+            </div>
+            <label className="mt-2 bg-red-400 hover:bg-red-500 text-white px-4 py-1 rounded-md w-full block text-center cursor-pointer">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              Change Photo
+            </label>
+          </div>
+
+          {/* Bio Section */}
+          <div className="flex-grow">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-bold">Bio</h4>
+              <button onClick={() => setBioEditing(!bioEditing)} className="text-red-400">
+                <FiEdit2 />
+              </button>
+            </div>
+            {bioEditing ? (
+              <div>
+                <textarea
+                  name="bio"
+                  value={trainerData.bio}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md p-2"
+                  rows="4"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={() => handleSave('bio')}
+                    className="bg-red-400 hover:bg-red-500 text-white px-4 py-1 rounded-md"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-600">{trainerData.bio || "No bio provided"}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Information */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Personal Information</h3>
+          <button 
+            onClick={() => setPersonalEditing(!personalEditing)}
+            className="text-red-400"
+          >
+            <FiEdit2 />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">First Name</label>
+            <input
+              type="text"
+              name="firstName"
+              value={trainerData.firstName}
+              onChange={handleChange}
+              disabled={!personalEditing}
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Last Name</label>
+            <input
+              type="text"
+              name="lastName"
+              value={trainerData.lastName}
+              onChange={handleChange}
+              disabled={!personalEditing}
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Phone Number</label>
+            <input
+              type="tel"
+              name="phoneNumber"
+              value={trainerData.phoneNumber}
+              onChange={handleChange}
+              disabled={!personalEditing}
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Email</label>
+            <input
+              type="email"
+              value={trainerData.email}
+              disabled
+              className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
+            />
+          </div>
+        </div>
+        {personalEditing && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => handleSave('personal')}
+              className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-md"
+            >
+              Save
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Job Information */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Job Information</h3>
+          <button 
+            onClick={() => setJobEditing(!jobEditing)}
+            className="text-red-400"
+          >
+            <FiEdit2 />
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Years of Experience</label>
+            <input
+              type="number"
+              name="yearsOfExperience"
+              value={trainerData.yearsOfExperience}
+              onChange={handleChange}
+              disabled={!jobEditing}
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Price Per Session</label>
+            <input
+              type="number"
+              name="pricePerSession"
+              value={trainerData.pricePerSession}
+              onChange={handleChange}
+              disabled={!jobEditing}
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Rating</label>
+            <input
+              type="text"
+              value={trainerData.avgRating}
+              disabled
+              className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
+            />
+          </div>
+          <div>
+            <label className="block text-gray-700 font-bold mb-2">Available Days</label>
+            <div className="flex flex-wrap gap-2">
+              {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
+                const shortDay = day.slice(0, 3);
+                return (
+                  <button
+                    key={day}
+                    onClick={() => {
+                      if (jobEditing) {
+                        const updatedDays = trainerData.availableDays.includes(day)
+                          ? trainerData.availableDays.filter(d => d !== day)
+                          : [...trainerData.availableDays, day];
+                        setTrainerData(prev => ({ ...prev, availableDays: updatedDays }));
+                      }
+                    }}
+                    disabled={!jobEditing}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      trainerData.availableDays.includes(day)
+                        ? 'bg-red-400 text-white'
+                        : 'bg-gray-100 text-gray-600'
+                    } ${jobEditing ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    {shortDay}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        {jobEditing && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => handleSave('job')}
+              className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-md"
+            >
+              Save
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Certificates - Read-only version */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-bold mb-4">Certificates</h3>
+        <div className="grid grid-cols-1 gap-4">
+          {certificates.map((cert) => (
+            <div key={cert.credintialId} className="border rounded-lg p-4 flex items-start space-x-4">
+              <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                <Image
+                  src={cert.imageUrl}
+                  alt={cert.name}
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              </div>
+              <div className="flex-grow">
+                <h4 className="font-bold">{cert.name}</h4>
+                <p className="text-sm text-gray-600">Issued by: {cert.issuingOrganization}</p>
+                {cert.url && (
+                  <a
+                    href={cert.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-red-400 hover:text-red-500 text-sm mt-1 inline-block"
+                  >
+                    View Certificate →
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
