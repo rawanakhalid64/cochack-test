@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import instance from "../../../../utils/axios";
 import { FiEdit2, FiAward } from 'react-icons/fi';
+import Link from "next/link";
 
 export default function TrainerProfileUpdated() {
   const router = useRouter();
@@ -14,8 +15,8 @@ export default function TrainerProfileUpdated() {
     dateOfBirth: "",
     phoneNumber: "",
     bio: "",
-    yearsOfExperience: "",
-    pricePerSession: "",
+    yearsOfExperience: 0,
+    pricePerSession: 0,
     profilePic: "",
     availableDays: [],
     availableInterval: {},
@@ -38,7 +39,12 @@ export default function TrainerProfileUpdated() {
     try {
       const response = await instance.get("/api/v1/users/me");
       if (response.data && response.data.user) {
-        setTrainerData(response.data.user);
+        setTrainerData(prev => ({
+          ...prev,
+          ...response.data.user,
+          yearsOfExperience: response.data.user.yearsOfExperience || 0,
+          pricePerSession: response.data.user.pricePerSession || 0,
+        }));
       }
     } catch (error) {
       console.error("Error fetching trainer data:", error);
@@ -48,11 +54,13 @@ export default function TrainerProfileUpdated() {
   const fetchCertificates = async () => {
     try {
       const response = await instance.get('/api/v1/certificates');
-      if (response.data && Array.isArray(response.data)) {
-        setCertificates(response.data);
-      }
+      // Check if the data is nested under 'certificate' property
+      const certificatesData = response.data?.certificate || response.data || [];
+      console.log("Processed certificates:", certificatesData); // Debug log
+      setCertificates(certificatesData);
     } catch (error) {
       console.error("Error fetching certificates:", error);
+      setCertificates([]);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +99,10 @@ export default function TrainerProfileUpdated() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setTrainerData(prev => ({ ...prev, [name]: value }));
+    setTrainerData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSave = async (section) => {
@@ -140,6 +151,15 @@ export default function TrainerProfileUpdated() {
     }
   };
 
+  const isValidImageUrl = (url) => {
+    if (!url) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
+  const generateUniqueKey = () => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -151,14 +171,21 @@ export default function TrainerProfileUpdated() {
         <div className="flex">
           <div className="mr-6">
             <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden">
-              <Image
-                src={trainerData.profilePic || "https://thumbs.dreamstime.com/b/default-profile-picture-avatar-photo-placeholder-vector-illustration-default-profile-picture-avatar-photo-placeholder-vector-189495158.jpg"}
-                alt="Profile"
-                width={96}
-                height={96}
-                className="object-cover w-full h-full"
-                unoptimized
-              />
+              {isValidImageUrl(trainerData.profilePic) ? (
+                <Image
+                  src={trainerData.profilePic}
+                  alt="Profile"
+                  width={96}
+                  height={96}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
             </div>
             <label className="mt-2 bg-red-400 hover:bg-red-500 text-white px-4 py-1 rounded-md w-full block text-center cursor-pointer">
               <input
@@ -183,7 +210,7 @@ export default function TrainerProfileUpdated() {
               <div>
                 <textarea
                   name="bio"
-                  value={trainerData.bio}
+                  value={trainerData.bio || ""}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-md p-2"
                   rows="4"
@@ -221,7 +248,7 @@ export default function TrainerProfileUpdated() {
             <input
               type="text"
               name="firstName"
-              value={trainerData.firstName}
+              value={trainerData.firstName || ""}
               onChange={handleChange}
               disabled={!personalEditing}
               className="w-full border border-gray-300 rounded-md p-2"
@@ -232,7 +259,7 @@ export default function TrainerProfileUpdated() {
             <input
               type="text"
               name="lastName"
-              value={trainerData.lastName}
+              value={trainerData.lastName || ""}
               onChange={handleChange}
               disabled={!personalEditing}
               className="w-full border border-gray-300 rounded-md p-2"
@@ -243,7 +270,7 @@ export default function TrainerProfileUpdated() {
             <input
               type="tel"
               name="phoneNumber"
-              value={trainerData.phoneNumber}
+              value={trainerData.phoneNumber || ""}
               onChange={handleChange}
               disabled={!personalEditing}
               className="w-full border border-gray-300 rounded-md p-2"
@@ -253,7 +280,7 @@ export default function TrainerProfileUpdated() {
             <label className="block text-gray-700 font-bold mb-2">Email</label>
             <input
               type="email"
-              value={trainerData.email}
+              value={trainerData.email || ""}
               disabled
               className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
             />
@@ -288,7 +315,7 @@ export default function TrainerProfileUpdated() {
             <input
               type="number"
               name="yearsOfExperience"
-              value={trainerData.yearsOfExperience}
+              value={trainerData.yearsOfExperience || 0}
               onChange={handleChange}
               disabled={!jobEditing}
               className="w-full border border-gray-300 rounded-md p-2"
@@ -299,7 +326,7 @@ export default function TrainerProfileUpdated() {
             <input
               type="number"
               name="pricePerSession"
-              value={trainerData.pricePerSession}
+              value={trainerData.pricePerSession || 0}
               onChange={handleChange}
               disabled={!jobEditing}
               className="w-full border border-gray-300 rounded-md p-2"
@@ -309,7 +336,7 @@ export default function TrainerProfileUpdated() {
             <label className="block text-gray-700 font-bold mb-2">Rating</label>
             <input
               type="text"
-              value={trainerData.avgRating}
+              value={trainerData.avgRating || "No ratings yet"}
               disabled
               className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
             />
@@ -356,26 +383,43 @@ export default function TrainerProfileUpdated() {
         )}
       </div>
 
-      {/* Certificates - Read-only version */}
+      {/* Certificates */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-bold mb-4">Certificates</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-bold">Certificates</h3>
+          <Link 
+            href="/trainer/certificates" 
+            className="text-red-400 hover:text-red-500 flex items-center gap-2"
+          >
+            <FiAward />
+            Manage Certificates
+          </Link>
+        </div>
         <div className="grid grid-cols-1 gap-4">
           {certificates.map((cert) => (
-            <div key={cert.credintialId} className="border rounded-lg p-4 flex items-start space-x-4">
+            <div 
+              key={`cert-${cert._id}-${Date.now()}`} 
+              className="border rounded-lg p-4 flex items-start space-x-4"
+            >
               <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                <Image
-                  src={cert.imageUrl}
-                  alt={cert.name}
-                  width={80}
-                  height={80}
-                  className="object-cover w-full h-full"
-                  unoptimized
-                />
+                {isValidImageUrl(cert.imageUrl) ? (
+                  <Image
+                    src={cert.imageUrl}
+                    alt={cert.name}
+                    width={80}
+                    height={80}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                    <FiAward className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
               </div>
               <div className="flex-grow">
                 <h4 className="font-bold">{cert.name}</h4>
-                <p className="text-sm text-gray-600">Issued by: {cert.issuingOrganization}</p>
-                {cert.url && (
+                <p className="text-sm text-gray-600">Issued by: {cert.issuingOrganization || 'Not specified'}</p>
+                {isValidImageUrl(cert.url) && (
                   <a
                     href={cert.url}
                     target="_blank"

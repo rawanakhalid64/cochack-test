@@ -1,344 +1,284 @@
-'use client'
-
-import React, { useState, useEffect } from 'react';
+"use client";
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { FiEdit2, FiAward, FiTrash2, FiSave, FiX } from 'react-icons/fi';
 import instance from "../../../utils/axios";
 
-const CertificateManager = () => {
+export default function CertificatesPage() {
   const [certificates, setCertificates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [selectedCertificate, setSelectedCertificate] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    imageUrl: '',
-    url: '',
-    issuingOrganization: ''
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    imageUrl: "",
+    url: "",
+    issuingOrganization: ""
   });
 
-  // Placeholder image (data URI for a simple gray placeholder)
-  const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23EEEEEE'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='20' text-anchor='middle' fill='%23999999' dominant-baseline='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
-
-  // Fetch all certificates
-  const fetchCertificates = async () => {
-    try {
-      setLoading(true);
-      
-      const response = await instance.get('/api/v1/certificates');
-      
-      console.log("API Response:", response.data);
-      
-      // Extract certificates from the response - using the structure we now know
-      let certificatesData = [];
-      if (response.data && Array.isArray(response.data.certificate)) {
-        // API returns { messsage: '...', certificate: [...] }
-        certificatesData = response.data.certificate;
-      } else if (Array.isArray(response.data)) {
-        certificatesData = response.data;
-      }
-      
-      setCertificates(certificatesData);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching certificates:", err);
-      setError('Failed to fetch certificates. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Create a new certificate
-  const createCertificate = async () => {
-    try {
-      setLoading(true);
-      
-      const response = await instance.post(
-        '/api/v1/certificates',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      console.log("Certificate created:", response.data);
-      
-      // After successful creation, refresh the certificates list
-      fetchCertificates();
-      setError(null);
-      setEditMode(false);
-      setSelectedCertificate(null);
-    } catch (err) {
-      console.error("Error creating certificate:", err);
-      setError('Failed to create certificate. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Update a certificate
-  const updateCertificate = async (certificateId) => {
-    try {
-      setLoading(true);
-      
-      const response = await instance.patch(
-        `/api/v1/certificates/${certificateId}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      console.log("Certificate updated:", response.data);
-      
-      // After successful update, refresh the certificates list
-      fetchCertificates();
-      setError(null);
-      setEditMode(false);
-      setSelectedCertificate(null);
-    } catch (err) {
-      console.error("Error updating certificate:", err);
-      setError('Failed to update certificate. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedCertificate && selectedCertificate.credintialId) {
-      updateCertificate(selectedCertificate.credintialId);
-    } else {
-      // If no certificate is selected, create a new one
-      createCertificate();
-    }
-  };
-
-  // Select a certificate for editing
-  const handleSelectCertificate = (certificate) => {
-    setSelectedCertificate(certificate);
-    setFormData({
-      name: certificate.name || '',
-      imageUrl: certificate.imageUrl || '',
-      url: certificate.url || '',
-      issuingOrganization: certificate.issuingOrganization || ''
-    });
-    setEditMode(true);
-  };
-
-  // Cancel editing
-  const handleCancel = () => {
-    setEditMode(false);
-    setSelectedCertificate(null);
-    setFormData({
-      name: '',
-      imageUrl: '',
-      url: '',
-      issuingOrganization: ''
-    });
-  };
-
-  // Add new certificate button handler
-  const handleAddNew = () => {
-    setSelectedCertificate(null);
-    setFormData({
-      name: '',
-      imageUrl: '',
-      url: '',
-      issuingOrganization: ''
-    });
-    setEditMode(true);
-  };
-
-  // Fetch certificates on component mount
   useEffect(() => {
     fetchCertificates();
   }, []);
 
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">My Certificates</h1>
-      
-      {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-          <p>{error}</p>
-        </div>
-      )}
+  const fetchCertificates = async () => {
+    try {
+      const response = await instance.get('/api/v1/certificates');
+      const certificatesData = response.data?.certificate || response.data || [];
+      console.log("Certificates fetched:", certificatesData);
+      setCertificates(certificatesData);
+    } catch (error) {
+      console.error("Error fetching certificates:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      {loading && !editMode ? (
-        <div className="flex justify-center">
-          <p>Loading certificates...</p>
-        </div>
-      ) : (
-        <>
-          {!editMode ? (
-            <div>
-              <div className="mb-6">
-                <button
-                  onClick={handleAddNew}
-                  className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
-                >
-                  Add New Certificate
-                </button>
-              </div>
-              
-              {!Array.isArray(certificates) || certificates.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="mb-4">No certificates found.</p>
+  const isValidImageUrl = (url) => {
+    if (!url) return false;
+    if (url === 'hhhh' || url === 'kkkkkkkkkkk' || url === 'cri') return false;
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
+
+  const handleImageUpload = async (e, certId) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPEG, PNG, GIF, or WebP)');
+      return;
+    }
+
+    if (file.size > maxSize) {
+      alert('File size should be less than 5MB');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const loadingElement = document.getElementById(`loading-${certId}`);
+      if (loadingElement) loadingElement.style.display = 'flex';
+
+      // First upload the image
+      const uploadResponse = await instance.post('/api/v1/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+
+      if (uploadResponse.data && uploadResponse.data.data) {
+        const imageUrl = uploadResponse.data.data;
+        
+        // Then update the certificate with the new image URL
+        await instance.patch(`/api/v1/certificates/${certId}`, {
+          ...editForm,
+          imageUrl: imageUrl
+        });
+
+        // Update local state
+        setEditForm(prev => ({ ...prev, imageUrl }));
+        fetchCertificates(); // Refresh the certificates list
+      }
+    } catch (error) {
+      console.error("Error handling image:", error);
+      let errorMessage = 'Failed to process image. ';
+      
+      if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.response?.status === 400) {
+        errorMessage += 'Invalid request. Please check the image file.';
+      } else if (error.response?.status === 500) {
+        errorMessage += 'Server error. Please try again later.';
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      alert(errorMessage);
+    } finally {
+      const loadingElement = document.getElementById(`loading-${certId}`);
+      if (loadingElement) loadingElement.style.display = 'none';
+    }
+  };
+
+  const handleEdit = (cert) => {
+    setEditingId(cert._id);
+    setEditForm({
+      name: cert.name || "",
+      imageUrl: isValidImageUrl(cert.imageUrl) ? cert.imageUrl : "",
+      url: cert.url || "",
+      issuingOrganization: cert.issuingOrganization || ""
+    });
+  };
+
+  const handleSave = async (certId) => {
+    try {
+      await instance.patch(`/api/v1/certificates/${certId}`, editForm);
+      await fetchCertificates(); // Refresh the list
+      setEditingId(null);
+      setEditForm({
+        name: "",
+        imageUrl: "",
+        url: "",
+        issuingOrganization: ""
+      });
+    } catch (error) {
+      console.error("Error updating certificate:", error);
+      alert("Failed to update certificate");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({
+      name: "",
+      imageUrl: "",
+      url: "",
+      issuingOrganization: ""
+    });
+  };
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6">My Certificates</h2>
+      <div className="grid gap-6">
+        {certificates.map((cert) => (
+          <div 
+            key={`cert-${cert._id}-${Date.now()}`}
+            className="bg-white rounded-lg shadow-md p-6"
+          >
+            {editingId === cert._id ? (
+              // Edit Mode
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md p-2 mr-4"
+                    placeholder="Certificate Name"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSave(cert._id)}
+                      className="text-green-500 hover:text-green-600"
+                    >
+                      <FiSave className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="text-gray-500 hover:text-gray-600"
+                    >
+                      <FiX className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {certificates.map((cert) => (
-                    <div key={cert.credintialId} className="border rounded-lg p-4 shadow hover:shadow-md transition">
-                      {cert.imageUrl && (
-                        <div className="mb-3">
-                          <img 
-                            src={cert.imageUrl} 
-                            alt={cert.name} 
-                            className="w-full h-40 object-contain"
-                            onError={(e) => {e.target.src = placeholderImage; e.target.alt = "Certificate image not available"}}
-                          />
+                <div className="flex gap-4">
+                  <div className="w-32">
+                    <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden relative">
+                      {isValidImageUrl(editForm.imageUrl) ? (
+                        <Image
+                          src={editForm.imageUrl}
+                          alt={editForm.name}
+                          width={128}
+                          height={128}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <FiAward className="w-8 h-8 text-gray-400" />
                         </div>
                       )}
-                      <h3 className="font-semibold text-lg">{cert.name}</h3>
-                      <p className="text-gray-600">{cert.issuingOrganization}</p>
-                      
-                      {cert.url && (
-                        <a 
-                          href={cert.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-600 hover:underline text-sm"
-                        >
-                          View Certificate
-                        </a>
-                      )}
-                      
-                      <div className="mt-4">
-                        <button
-                          onClick={() => handleSelectCertificate(cert)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
-                        >
-                          Edit
-                        </button>
+                      {/* Loading Overlay */}
+                      <div 
+                        id={`loading-${cert._id}`} 
+                        className="absolute inset-0 bg-black bg-opacity-50 hidden items-center justify-center"
+                      >
+                        <div className="text-white text-sm">Uploading...</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-4">
-                {selectedCertificate ? 'Edit Certificate' : 'Add New Certificate'}
-              </h2>
-              
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                    Certificate Name
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    required
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="imageUrl">
-                    Image URL
-                  </label>
-                  <input
-                    id="imageUrl"
-                    name="imageUrl"
-                    type="text"
-                    value={formData.imageUrl}
-                    onChange={handleInputChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="url">
-                    Certificate URL
-                  </label>
-                  <input
-                    id="url"
-                    name="url"
-                    type="text"
-                    value={formData.url}
-                    onChange={handleInputChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="issuingOrganization">
-                    Issuing Organization
-                  </label>
-                  <input
-                    id="issuingOrganization"
-                    name="issuingOrganization"
-                    type="text"
-                    value={formData.issuingOrganization}
-                    onChange={handleInputChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  />
-                </div>
-                
-                {formData.imageUrl && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-bold mb-2">Preview</h3>
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Certificate Preview" 
-                      className="w-full h-40 object-contain border"
-                      onError={(e) => {e.target.src = placeholderImage; e.target.alt = "Image preview not available"}}
+                    <label className="mt-2 bg-red-400 hover:bg-red-500 text-white px-4 py-1 rounded-md w-full block text-center cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={(e) => handleImageUpload(e, cert._id)}
+                        className="hidden"
+                      />
+                      Change Image
+                    </label>
+                  </div>
+                  <div className="flex-grow space-y-4">
+                    <input
+                      type="text"
+                      value={editForm.issuingOrganization}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, issuingOrganization: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-md p-2"
+                      placeholder="Issuing Organization"
+                    />
+                    <input
+                      type="url"
+                      value={editForm.url}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, url: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-md p-2"
+                      placeholder="Certificate URL"
                     />
                   </div>
-                )}
-                
-                <div className="flex items-center justify-between mt-6">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    disabled={loading}
-                  >
-                    {loading ? (selectedCertificate ? 'Saving...' : 'Creating...') : (selectedCertificate ? 'Save Changes' : 'Create Certificate')}
-                  </button>
                 </div>
-              </form>
-            </div>
-          )}
-        </>
-      )}
+              </div>
+            ) : (
+              // View Mode
+              <div className="flex items-start space-x-4">
+                <div className="w-32 h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  {isValidImageUrl(cert.imageUrl) ? (
+                    <Image
+                      src={cert.imageUrl}
+                      alt={cert.name}
+                      width={128}
+                      height={128}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FiAward className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-bold">{cert.name}</h3>
+                      <p className="text-sm text-gray-600">Issued by: {cert.issuingOrganization || 'Not specified'}</p>
+                    </div>
+                    <button
+                      onClick={() => handleEdit(cert)}
+                      className="text-red-400 hover:text-red-500"
+                    >
+                      <FiEdit2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                  {isValidImageUrl(cert.url) && (
+                    <a
+                      href={cert.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-red-400 hover:text-red-500 text-sm mt-2 inline-block"
+                    >
+                      View Certificate →
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
-};
-
-export default CertificateManager;
+}
