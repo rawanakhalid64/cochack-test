@@ -120,15 +120,31 @@ export default function TraineeData() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Set preview for immediate visual feedback
-      setPreview(URL.createObjectURL(file));
-      
-      // Upload the image and get URL
-      const imageUrl = await uploadImage(file);
-      if (imageUrl) {
-        setUploadedImage(imageUrl);
-        // Store the image URL in cookies or localStorage to access in the profile page
-        localStorage.setItem('uploadedProfileImage', imageUrl);
+      try {
+        setIsUploading(true);
+        const token = Cookies.get('accessToken');
+        if (!token) {
+          console.error('No token found in cookies.');
+          return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file); 
+        
+        const response = await instance.post('/api/v1/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        console.log('Image uploaded successfully:', response.data);
+        setUploadedImage(response.data.data);
+        setPreview(URL.createObjectURL(file));
+      } catch (error) {
+        console.error('Error uploading image:', error.response?.data || error.message);
+      } finally {
+        setIsUploading(false);
       }
     }
   };
@@ -179,10 +195,7 @@ export default function TraineeData() {
       console.log('Server response:', response.data);
 
       if (response && response.data) {
-        // Store the updated data in localStorage
-        localStorage.setItem('updatedUserData', JSON.stringify(response.data));
-        
-        // Update Redux store
+        // Update Redux store with the new data
         await dispatch(fetchUserData());
         
         // Add a small delay to ensure data is saved

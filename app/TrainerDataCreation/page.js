@@ -254,21 +254,33 @@ const CreateProfileTrainer = () => {
         areasOfExpertise: formData.areasOfExpertise,
         availableDays: formData.availableDays,
         yearsOfExperience: parseInt(formData.yearsOfExperience, 10) || 0,
-        profilePic: formData.profilePic,
+        profilePhoto: formData.profilePic,
         pricePerSession: parseFloat(formData.pricePerSession) || 0,
       };
 
-      console.log("Saving profile with certificates:", formData.certificates);
-      console.log("Profile update payload:", payload);
+      console.log("Saving profile with payload:", payload);
       
-      await instance.patch('/api/v1/users/me', payload);
-      showNotification('Profile updated successfully!', 'success');
+      const response = await instance.patch('/api/v1/users/me', payload);
+      console.log("Profile update response:", response.data);
       
-      setTimeout(() => {
+      if (response.data && response.data.message === "profile updated successful") {
+        showNotification('Profile updated successfully!', 'success');
+        
+        // Add a small delay to ensure data is saved
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         router.push('/trainer/profile/TrainerProfileUpdated');
-      }, 1500);
+      } else {
+        console.error('Unexpected response:', response.data);
+        throw new Error('Unexpected response from server');
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Error updating profile:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      showNotification(error.response?.data?.message || 'Failed to update profile. Please try again.', 'error');
       handleAuthError(error);
     } finally {
       setIsSaving(false);
