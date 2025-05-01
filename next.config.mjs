@@ -3,7 +3,8 @@ const nextConfig = {
     images: {
         domains: [
             'res.cloudinary.com',
-            'dmbd60etr.cloudinary.com'
+            'dmbd60etr.cloudinary.com',
+            'thumbs.dreamstime.com'
         ],
     },
     // Add other performance optimizations

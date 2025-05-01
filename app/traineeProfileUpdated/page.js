@@ -6,6 +6,7 @@ import SidebarLayout from "../../components/SidebarLayout/SidebarLayout";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUserData } from "../../Redux/userSlice";
 import ProfileImageUploader from "../../components/ProfileImageUploader/ProfileImageUploader";
+import Image from "next/image";
 // import ImageDisplay from "../../components/ImageDisplay/ImageDisplay";
 
 export default function TraineeProfileUpdated() {
@@ -39,45 +40,70 @@ export default function TraineeProfileUpdated() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Check for uploaded image URL in localStorage
-    const uploadedProfileImage = localStorage.getItem('uploadedProfileImage');
     
-    if (uploadedProfileImage) {
-      setDisplayedImage(uploadedProfileImage);
-    }
-    
-    if (!userDataState) {
-      dispatch(fetchUserData());
-    } else {
-      setUserData({
-        firstName: userDataState.firstName || "N/A",
-        lastName: userDataState.lastName || "N/A",
-        email: userDataState.email || "N/A",
-        birthdate: userDataState.dateOfBirth || "N/A",
-        profilePhoto: userDataState.profilePhoto,
-        weight: userDataState.weight ? `${userDataState.weight} kg` : "Not provided",
-        height: userDataState.height ? `${userDataState.height} cm` : "Not provided",
-        fitnessLevel: userDataState.fitnessLevel || "Not specified",
-        goal: userDataState.fitnessGoal || "No goal set",
-        job: userDataState.job || "Not specified",
-        healthCondition: userDataState.healthCondition || [],
-        allergy: userDataState.allergy || []
-      });
-      
-      // Only set displayedImage from userData if no uploaded image was found
-      if (!uploadedProfileImage && userDataState.profilePhoto) {
-        setDisplayedImage(userDataState.profilePhoto);
+    const fetchUserData = async () => {
+      try {
+        const response = await instance.get('/api/v1/users/me');
+        console.log('Fetched user data:', response.data);
+        
+        if (response.data && response.data.user) {
+          const userData = response.data.user;
+          console.log('User data:', userData);
+          
+          // Safely handle the date
+          let formattedDate = "";
+          if (userData.dateOfBirth) {
+            try {
+              const date = new Date(userData.dateOfBirth);
+              if (!isNaN(date.getTime())) {
+                formattedDate = date.toISOString().split('T')[0];
+              }
+            } catch (error) {
+              console.error('Error formatting date:', error);
+            }
+          }
+          
+          setUserData({
+            firstName: userData.firstName || "N/A",
+            lastName: userData.lastName || "N/A",
+            email: userData.email || "N/A",
+            birthdate: formattedDate,
+            profilePhoto: userData.profilePhoto,
+            weight: userData.weight ? `${userData.weight} kg` : "Not provided",
+            height: userData.height ? `${userData.height} cm` : "Not provided",
+            fitnessLevel: userData.fitnessLevel || "Not specified",
+            goal: userData.fitnessGoal || "No goal set",
+            job: userData.job || "Not specified",
+            healthCondition: userData.healthCondition || [],
+            allergy: userData.allergy || []
+          });
+          
+          // Handle profile photo
+          if (userData.profilePhoto) {
+            console.log('Setting profile photo from user data:', userData.profilePhoto);
+            setDisplayedImage(userData.profilePhoto);
+          } else {
+            // Set default image if no profile photo
+            setDisplayedImage("https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg");
+          }
+          
+          // Fetch health condition names if any
+          if (userData.healthCondition && userData.healthCondition.length > 0) {
+            fetchHealthConditionNames(userData.healthCondition);
+          }
+          
+          // Fetch allergy names if any
+          if (userData.allergy && userData.allergy.length > 0) {
+            fetchAllergyNames(userData.allergy);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       }
-      
-      if (userDataState.healthCondition && userDataState.healthCondition.length > 0) {
-        fetchHealthConditionNames(userDataState.healthCondition);
-      }
-      
-      if (userDataState.allergy && userDataState.allergy.length > 0) {
-        fetchAllergyNames(userDataState.allergy);
-      }
-    }
-  }, [userDataState, dispatch]);
+    };
+
+    fetchUserData();
+  }, []);
 
   const fetchHealthConditionNames = async (healthConditionIds) => {
     try {
@@ -119,10 +145,16 @@ export default function TraineeProfileUpdated() {
   };
 
   const handleImageChange = (newImageUrl) => {
-    setDisplayedImage(newImageUrl);
-    setUserData(prev => ({ ...prev, profilePhoto: newImageUrl }));
-    // Store in localStorage for persistence
-    localStorage.setItem('uploadedProfileImage', newImageUrl);
+    console.log('New image URL received:', newImageUrl);
+    if (newImageUrl) {
+      setDisplayedImage(newImageUrl);
+      setUserData(prev => ({ ...prev, profilePhoto: newImageUrl }));
+      // Store in localStorage for persistence
+      localStorage.setItem('uploadedProfileImage', newImageUrl);
+    } else {
+      console.error('No image URL provided');
+      setDisplayedImage("https://thumbs.dreamstime.com/b/default-profile-picture-avatar-photo-placeholder-vector-illustration-default-profile-picture-avatar-photo-placeholder-vector-189495158.jpg");
+    }
     setIsChangingPhoto(false);
   };
 
@@ -139,13 +171,14 @@ export default function TraineeProfileUpdated() {
         birthdate: userData.birthdate
           ? new Date(userData.birthdate).toISOString()
           : null,
-        // Add the displayed image URL to the saved profile data
-        profilePhoto: displayedImage
+        profilePhoto: displayedImage || userData.profilePhoto // Ensure we have a profile photo
       };
   
+      console.log('Saving data with profile photo:', preparedData.profilePhoto);
       const response = await instance.patch("/api/v1/users/me", preparedData);
   
       if (response.data && response.data.user) {
+        console.log('Save successful, new user data:', response.data.user);
         setUserData({
           ...response.data.user,
           weight: response.data.user.weight
@@ -155,6 +188,7 @@ export default function TraineeProfileUpdated() {
             ? `${response.data.user.height} cm`
             : "Not provided",
           birthdate: response.data.user.birthdate || "",
+          profilePhoto: response.data.user.profilePhoto || displayedImage
         });
         setIsEditing(false);
         dispatch(fetchUserData());
@@ -277,20 +311,26 @@ export default function TraineeProfileUpdated() {
               </div>
             ) : (
               <div className="relative group">
-                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200">
-                  {displayedImage ? (
-                    <img 
-                      src={displayedImage} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                  )}
+                <div className="flex flex-col items-center">
+                  <div className="relative w-32 h-32 mb-4">
+                    {displayedImage ? (
+                      <Image
+                        src={displayedImage}
+                        alt="Profile"
+                        fill
+                        className="rounded-full object-cover"
+                        priority
+                        onError={(e) => {
+                          console.error('Image load error:', e);
+                          setDisplayedImage("https://thumbs.dreamstime.com/b/default-profile-picture-avatar-photo-placeholder-vector-illustration-default-profile-picture-avatar-photo-placeholder-vector-189495158.jpg");
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500">No image</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={handleChangePhotoClick}

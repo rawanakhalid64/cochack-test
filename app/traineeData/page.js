@@ -4,9 +4,11 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import instance from "../../utils/axios";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchUserData } from "../../Redux/userSlice";
 
 export default function TraineeData() {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     age: '',
     height: '',
@@ -162,9 +164,11 @@ export default function TraineeData() {
         fitnessGoal: finalGoal,
         healthCondition: healthConditions,
         allergy: allergiesList,
+        profilePhoto: uploadedImage
       };
 
-      // Don't include the image URL in the user data update
+      console.log('Sending payload:', payload);
+
       const response = await instance.patch('/api/v1/users/me', payload, {
         headers: {
           'Content-Type': 'application/json',
@@ -172,10 +176,29 @@ export default function TraineeData() {
         },
       });
 
-      console.log('Profile updated:', response.data);
-      router.push('/traineeProfileUpdated');
+      console.log('Server response:', response.data);
+
+      if (response && response.data) {
+        // Store the updated data in localStorage
+        localStorage.setItem('updatedUserData', JSON.stringify(response.data));
+        
+        // Update Redux store
+        await dispatch(fetchUserData());
+        
+        // Add a small delay to ensure data is saved
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Navigate to the profile page
+        router.push('/traineeProfileUpdated');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error) {
-      console.error('Error updating profile:', error.response?.data || error.message);
+      console.error('Error updating profile:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
     }
   };
 

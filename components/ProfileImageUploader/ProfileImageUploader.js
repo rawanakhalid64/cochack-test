@@ -41,14 +41,27 @@ export default function ProfileImageUploader({
   };
 
   const uploadImage = async (file) => {
-    if (!file) return null;
+    if (!file) {
+      console.error('No file provided for upload');
+      return null;
+    }
     
     // If using localStorage, create a data URL and return it directly
     if (useLocalStorage) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          resolve(reader.result);
+          if (reader.result) {
+            console.log('Created data URL for image');
+            resolve(reader.result);
+          } else {
+            console.error('Failed to create data URL');
+            reject(new Error('Failed to create data URL'));
+          }
+        };
+        reader.onerror = () => {
+          console.error('Error reading file');
+          reject(new Error('Error reading file'));
         };
         reader.readAsDataURL(file);
       });
@@ -66,6 +79,7 @@ export default function ProfileImageUploader({
       const formData = new FormData();
       formData.append('file', file);
       
+      console.log('Uploading image to server...');
       const response = await instance.post('/api/v1/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -73,8 +87,13 @@ export default function ProfileImageUploader({
         },
       });
       
-      console.log('Image uploaded successfully:', response.data);
-      return response.data.data;
+      if (response.data && response.data.data) {
+        console.log('Image uploaded successfully:', response.data.data);
+        return response.data.data;
+      } else {
+        console.error('Invalid response format:', response.data);
+        return null;
+      }
     } catch (error) {
       console.error('Error uploading image:', error.response?.data || error.message);
       return null;
@@ -85,7 +104,24 @@ export default function ProfileImageUploader({
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) {
+      console.error('No file selected');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      console.error('Invalid file type. Please select an image file.');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('File size too large. Maximum size is 5MB.');
+      return;
+    }
+
+    try {
       // Set preview for immediate visual feedback
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
@@ -93,9 +129,15 @@ export default function ProfileImageUploader({
       // Upload the image and get URL
       const imageUrl = await uploadImage(file);
       if (imageUrl) {
-        // Call the parent component's handler with the new image URL
+        console.log('Image upload successful, calling onImageChange with:', imageUrl);
         onImageChange(imageUrl);
+      } else {
+        console.error('Failed to get image URL after upload');
+        setPreview(null);
       }
+    } catch (error) {
+      console.error('Error in handleImageUpload:', error);
+      setPreview(null);
     }
   };
 
