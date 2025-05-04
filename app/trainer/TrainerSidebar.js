@@ -2,7 +2,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaUser, FaBell, FaLock, FaCertificate, FaMoneyBillWave } from "react-icons/fa";
+import {
+  FaUser,
+  FaBell,
+  FaLock,
+  FaCertificate,
+  FaMoneyBillWave,
+} from "react-icons/fa";
 
 export default function TrainerSidebar() {
   const pathname = usePathname();
@@ -12,11 +18,15 @@ export default function TrainerSidebar() {
   };
 
   return (
-    <div className="w-64 bg-white h-screen fixed left-0 top-0 shadow-md p-4">
+    <div className="w-64 bg-white dark:bg-[#2E0D44] h-screen fixed left-0 top-0 shadow-md p-4">
       <div className="flex flex-col space-y-6 mt-8">
         <Link
           href="/trainer/profile/TrainerProfileUpdated"
-          className={`flex items-center space-x-3 p-3 rounded-lg ${isActive("/trainer/profile/TrainerProfileUpdated") ? "bg-red-100 text-red-600" : "hover:bg-gray-100"}`}
+          className={`flex items-center space-x-3 p-3 rounded-lg ${
+            isActive("/trainer/profile/TrainerProfileUpdated")
+              ? "bg-red-100 text-red-600"
+              : "hover:bg-gray-100 dark:hover:bg-red-100 dark:hover:text-red-600"
+          }`}
         >
           <FaUser className="text-lg" />
           <span>Profile</span>
@@ -24,7 +34,11 @@ export default function TrainerSidebar() {
 
         <Link
           href="/trainer/subscriptions"
-          className={`flex items-center space-x-3 p-3 rounded-lg ${isActive("/trainer/subscriptions") ? "bg-red-100 text-red-600" : "hover:bg-gray-100"}`}
+          className={`flex items-center space-x-3 p-3 rounded-lg ${
+            isActive("/trainer/subscriptions")
+              ? "bg-red-100 text-red-600"
+              : "hover:bg-gray-100 dark:hover:bg-red-100 dark:hover:text-red-600"
+          }`}
         >
           <FaMoneyBillWave className="text-lg" />
           <span>Subscriptions</span>
@@ -32,7 +46,11 @@ export default function TrainerSidebar() {
 
         <Link
           href="/trainer/reminders"
-          className={`flex items-center space-x-3 p-3 rounded-lg ${isActive("/trainer/reminders") ? "bg-red-100 text-red-600" : "hover:bg-gray-100"}`}
+          className={`flex items-center space-x-3 p-3 rounded-lg ${
+            isActive("/trainer/reminders")
+              ? "bg-red-100 text-red-600"
+              : "hover:bg-gray-100 dark:hover:bg-red-100 dark:hover:text-red-600"
+          }`}
         >
           <FaBell className="text-lg" />
           <span>Reminders</span>
@@ -40,7 +58,11 @@ export default function TrainerSidebar() {
 
         <Link
           href="/trainer/certificates"
-          className={`flex items-center space-x-3 p-3 rounded-lg ${isActive("/trainer/certificates") ? "bg-red-100 text-red-600" : "hover:bg-gray-100"}`}
+          className={`flex items-center space-x-3 p-3 rounded-lg ${
+            isActive("/trainer/certificates")
+              ? "bg-red-100 text-red-600"
+              : "hover:bg-gray-100 dark:hover:bg-red-100 dark:hover:text-red-600"
+          }`}
         >
           <FaCertificate className="text-lg" />
           <span>Certificates</span>
@@ -48,7 +70,11 @@ export default function TrainerSidebar() {
 
         <Link
           href="/trainer/password"
-          className={`flex items-center space-x-3 p-3 rounded-lg ${isActive("/trainer/password") ? "bg-red-100 text-red-600" : "hover:bg-gray-100"}`}
+          className={`flex items-center space-x-3 p-3 rounded-lg ${
+            isActive("/trainer/password")
+              ? "bg-red-100 text-red-600"
+              : "hover:bg-gray-100 dark:hover:bg-red-100 dark:hover:text-red-600"
+          }`}
         >
           <FaLock className="text-lg" />
           <span>Password</span>

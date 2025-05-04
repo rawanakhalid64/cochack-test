@@ -1,4 +1,3 @@
-
 import ReduxProvider from "../components/ReduxProvider/ReduxProvider";
 import ClientLayout from "./ClientLayout";
 import "./globals.css";
@@ -13,9 +12,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <ReduxProvider>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          <ClientLayout>{children}</ClientLayout>
         </ReduxProvider>
       </body>
     </html>

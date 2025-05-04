@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import instance from "../../../../utils/axios";
-import { FiEdit2, FiAward } from 'react-icons/fi';
+import { FiEdit2, FiAward } from "react-icons/fi";
 import Link from "next/link";
 
 export default function TrainerProfileUpdated() {
@@ -21,7 +21,7 @@ export default function TrainerProfileUpdated() {
     availableDays: [],
     availableInterval: {},
     role: "",
-    isVerified: false
+    isVerified: false,
   });
 
   const [certificates, setCertificates] = useState([]);
@@ -38,18 +38,20 @@ export default function TrainerProfileUpdated() {
   const fetchTrainerData = async () => {
     try {
       const response = await instance.get("/api/v1/users/me");
-      console.log('Fetched user data:', response.data);
+      console.log("Fetched user data:", response.data);
       if (response.data && response.data.user) {
         const userData = response.data.user;
-        console.log('User profile photo:', userData.profilePhoto);
-        
+        console.log("User profile photo:", userData.profilePhoto);
+
         // Set the initial state with the profile photo
-        setTrainerData(prev => ({
+        setTrainerData((prev) => ({
           ...prev,
           ...userData,
           yearsOfExperience: userData.yearsOfExperience || 0,
           pricePerSession: userData.pricePerSession || 0,
-          profilePhoto: userData.profilePhoto || "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg"
+          profilePhoto:
+            userData.profilePhoto ||
+            "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg",
         }));
       }
     } catch (error) {
@@ -59,9 +61,10 @@ export default function TrainerProfileUpdated() {
 
   const fetchCertificates = async () => {
     try {
-      const response = await instance.get('/api/v1/certificates');
+      const response = await instance.get("/api/v1/certificates");
       // Check if the data is nested under 'certificate' property
-      const certificatesData = response.data?.certificate || response.data || [];
+      const certificatesData =
+        response.data?.certificate || response.data || [];
       console.log("Processed certificates:", certificatesData); // Debug log
       setCertificates(certificatesData);
     } catch (error) {
@@ -77,33 +80,33 @@ export default function TrainerProfileUpdated() {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
-      console.log('Uploading image...');
-      const response = await instance.post('/api/v1/upload', formData, {
+      console.log("Uploading image...");
+      const response = await instance.post("/api/v1/upload", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log('Upload response:', response.data);
+      console.log("Upload response:", response.data);
 
       if (response.data && response.data.data) {
         const imageUrl = response.data.data;
-        console.log('Uploaded image URL:', imageUrl);
-        
+        console.log("Uploaded image URL:", imageUrl);
+
         // Update the user profile with the new image URL
         const updateResponse = await instance.patch("/api/v1/users/me", {
-          profilePhoto: imageUrl
+          profilePhoto: imageUrl,
         });
-        
-        console.log('Profile update response:', updateResponse.data);
-        
+
+        console.log("Profile update response:", updateResponse.data);
+
         // Update local state with the new image URL
-        setTrainerData(prev => ({
+        setTrainerData((prev) => ({
           ...prev,
-          profilePhoto: imageUrl
+          profilePhoto: imageUrl,
         }));
 
         // Fetch fresh data to ensure we have the latest state
@@ -111,56 +114,59 @@ export default function TrainerProfileUpdated() {
       }
     } catch (error) {
       console.error("Error uploading image:", error);
-      alert('Failed to upload image');
+      alert("Failed to upload image");
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setTrainerData(prev => ({
+    setTrainerData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSave = async (section) => {
     try {
       let updateData = {};
-      
-      if (section === 'personal') {
+
+      if (section === "personal") {
         updateData = {
           firstName: trainerData.firstName,
           lastName: trainerData.lastName,
           phoneNumber: trainerData.phoneNumber,
-          dateOfBirth: trainerData.dateOfBirth
+          dateOfBirth: trainerData.dateOfBirth,
         };
-      } else if (section === 'job') {
+      } else if (section === "job") {
         updateData = {
           yearsOfExperience: trainerData.yearsOfExperience,
           pricePerSession: trainerData.pricePerSession,
           availableDays: trainerData.availableDays,
-          availableInterval: trainerData.availableInterval
+          availableInterval: trainerData.availableInterval,
         };
-      } else if (section === 'bio') {
+      } else if (section === "bio") {
         updateData = {
-          bio: trainerData.bio
+          bio: trainerData.bio,
         };
       }
 
       const response = await instance.patch("/api/v1/users/me", updateData);
       if (response.data && response.data.user) {
-        setTrainerData(prev => ({ ...prev, ...response.data.user }));
-        alert('Profile updated successfully');
+        setTrainerData((prev) => ({ ...prev, ...response.data.user }));
+        alert("Profile updated successfully");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert('Failed to update profile');
+      alert("Failed to update profile");
     }
   };
 
   const handleCertificateEdit = async (certId, updatedData) => {
     try {
-      const response = await instance.patch(`/api/v1/certificates/${certId}`, updatedData);
+      const response = await instance.patch(
+        `/api/v1/certificates/${certId}`,
+        updatedData
+      );
       if (response.data) {
         fetchCertificates(); // Refresh certificates after update
       }
@@ -171,8 +177,8 @@ export default function TrainerProfileUpdated() {
 
   const isValidImageUrl = (url) => {
     if (!url) return false;
-    const isValid = url.startsWith('http://') || url.startsWith('https://');
-    console.log('Checking image URL:', url, 'isValid:', isValid);
+    const isValid = url.startsWith("http://") || url.startsWith("https://");
+    console.log("Checking image URL:", url, "isValid:", isValid);
     return isValid;
   };
 
@@ -182,14 +188,16 @@ export default function TrainerProfileUpdated() {
 
   // Add useEffect to log state changes
   useEffect(() => {
-    console.log('Current trainerData:', trainerData);
+    console.log("Current trainerData:", trainerData);
   }, [trainerData]);
 
   // Profile Image Component
   const ProfileImage = () => {
-    const imageUrl = trainerData.profilePhoto || "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg";
-    console.log('Rendering ProfileImage with URL:', imageUrl);
-    
+    const imageUrl =
+      trainerData.profilePhoto ||
+      "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg";
+    console.log("Rendering ProfileImage with URL:", imageUrl);
+
     return (
       <Image
         src={imageUrl}
@@ -198,10 +206,11 @@ export default function TrainerProfileUpdated() {
         height={96}
         className="object-cover w-full h-full"
         onError={(e) => {
-          console.error('Image load error:', e);
-          setTrainerData(prev => ({
+          console.error("Image load error:", e);
+          setTrainerData((prev) => ({
             ...prev,
-            profilePhoto: "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg"
+            profilePhoto:
+              "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg",
           }));
         }}
       />
@@ -213,24 +222,28 @@ export default function TrainerProfileUpdated() {
   }
 
   return (
-    <div className="min-h-screen bg-white py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white dark:bg-[#2E0D44] py-6 px-4 sm:px-6 lg:px-8 rounded-2xl">
       <div className="max-w-full mx-auto">
-        <div className="bg-white">
+        <div className="bg-white dark:bg-[#2E0D44]">
           <div className="bg-[#2E0D44] p-8 flex justify-between items-center">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white">Update Trainer Profile</h1>
-              <p className="text-gray-200 mt-2 text-base md:text-lg">Edit your profile information</p>
+              <h1 className="text-3xl md:text-4xl font-bold text-white">
+                Update Trainer Profile
+              </h1>
+              <p className="text-gray-200 mt-2 text-base md:text-lg">
+                Edit your profile information
+              </p>
             </div>
             <button
-              onClick={() => router.push('/trainer/profile/view')}
+              onClick={() => router.push("/trainer/profile/view")}
               className="px-6 py-3 bg-[#B46B6B] text-white rounded-lg hover:bg-opacity-90 transition-all duration-200"
             >
               View Profile
             </button>
           </div>
-          
+
           {/* Profile Header */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white dark:bg-[#7946bb3a] rounded-lg shadow-md p-6 mb-6">
             <div className="flex">
               <div className="mr-6">
                 <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden">
@@ -251,7 +264,10 @@ export default function TrainerProfileUpdated() {
               <div className="flex-grow">
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="font-bold">Bio</h4>
-                  <button onClick={() => setBioEditing(!bioEditing)} className="text-red-400">
+                  <button
+                    onClick={() => setBioEditing(!bioEditing)}
+                    className="text-red-400"
+                  >
                     <FiEdit2 />
                   </button>
                 </div>
@@ -261,12 +277,12 @@ export default function TrainerProfileUpdated() {
                       name="bio"
                       value={trainerData.bio || ""}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-md p-2"
+                      className="w-full border border-gray-300 rounded-md p-2 "
                       rows="4"
                     />
                     <div className="mt-2 flex justify-end">
                       <button
-                        onClick={() => handleSave('bio')}
+                        onClick={() => handleSave("bio")}
                         className="bg-red-400 hover:bg-red-500 text-white px-4 py-1 rounded-md"
                       >
                         Save
@@ -274,17 +290,19 @@ export default function TrainerProfileUpdated() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-600">{trainerData.bio || "No bio provided"}</p>
+                  <p className="text-gray-600 dark:text-gray-200">
+                    {trainerData.bio || "No bio provided"}
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
           {/* Personal Information */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6 dark:bg-[#7946bb3a]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Personal Information</h3>
-              <button 
+              <button
                 onClick={() => setPersonalEditing(!personalEditing)}
                 className="text-red-400"
               >
@@ -293,7 +311,9 @@ export default function TrainerProfileUpdated() {
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-gray-700 font-bold mb-2">First Name</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  First Name
+                </label>
                 <input
                   type="text"
                   name="firstName"
@@ -304,7 +324,9 @@ export default function TrainerProfileUpdated() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Last Name</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Last Name
+                </label>
                 <input
                   type="text"
                   name="lastName"
@@ -315,7 +337,9 @@ export default function TrainerProfileUpdated() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Phone Number</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Phone Number
+                </label>
                 <input
                   type="tel"
                   name="phoneNumber"
@@ -326,19 +350,21 @@ export default function TrainerProfileUpdated() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Email</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Email
+                </label>
                 <input
                   type="email"
                   value={trainerData.email || ""}
                   disabled
-                  className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
+                  className="w-full border border-gray-300 rounded-md p-2"
                 />
               </div>
             </div>
             {personalEditing && (
               <div className="mt-4 flex justify-end">
                 <button
-                  onClick={() => handleSave('personal')}
+                  onClick={() => handleSave("personal")}
                   className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-md"
                 >
                   Save
@@ -348,10 +374,10 @@ export default function TrainerProfileUpdated() {
           </div>
 
           {/* Job Information */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white dark:bg-[#7946bb3a] rounded-lg shadow-md p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Job Information</h3>
-              <button 
+              <button
                 onClick={() => setJobEditing(!jobEditing)}
                 className="text-red-400"
               >
@@ -360,7 +386,9 @@ export default function TrainerProfileUpdated() {
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Years of Experience</label>
+                <label className="block text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Years of Experience
+                </label>
                 <input
                   type="number"
                   name="yearsOfExperience"
@@ -371,7 +399,9 @@ export default function TrainerProfileUpdated() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Price Per Session</label>
+                <label className="block  text-gray-700 dark:text-gray-300  font-bold mb-2">
+                  Price Per Session
+                </label>
                 <input
                   type="number"
                   name="pricePerSession"
@@ -382,36 +412,54 @@ export default function TrainerProfileUpdated() {
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Rating</label>
+                <label className="block  text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Rating
+                </label>
                 <input
                   type="text"
                   value={trainerData.avgRating || "No ratings yet"}
                   disabled
-                  className="w-full border border-gray-300 rounded-md p-2 bg-gray-50"
+                  className="w-full border border-gray-300 rounded-md p-2 "
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-bold mb-2">Available Days</label>
+                <label className="block  text-gray-700 dark:text-gray-300 font-bold mb-2">
+                  Available Days
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
+                  {[
+                    "Sunday",
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                  ].map((day) => {
                     const shortDay = day.slice(0, 3);
                     return (
                       <button
                         key={day}
                         onClick={() => {
                           if (jobEditing) {
-                            const updatedDays = trainerData.availableDays.includes(day)
-                              ? trainerData.availableDays.filter(d => d !== day)
-                              : [...trainerData.availableDays, day];
-                            setTrainerData(prev => ({ ...prev, availableDays: updatedDays }));
+                            const updatedDays =
+                              trainerData.availableDays.includes(day)
+                                ? trainerData.availableDays.filter(
+                                    (d) => d !== day
+                                  )
+                                : [...trainerData.availableDays, day];
+                            setTrainerData((prev) => ({
+                              ...prev,
+                              availableDays: updatedDays,
+                            }));
                           }
                         }}
                         disabled={!jobEditing}
                         className={`px-3 py-1 rounded-md text-sm ${
                           trainerData.availableDays.includes(day)
-                            ? 'bg-red-400 text-white'
-                            : 'bg-gray-100 text-gray-600'
-                        } ${jobEditing ? 'cursor-pointer' : 'cursor-default'}`}
+                            ? "bg-red-400 text-white"
+                            : "bg-gray-100 text-gray-600"
+                        } ${jobEditing ? "cursor-pointer" : "cursor-default"}`}
                       >
                         {shortDay}
                       </button>
@@ -423,7 +471,7 @@ export default function TrainerProfileUpdated() {
             {jobEditing && (
               <div className="mt-4 flex justify-end">
                 <button
-                  onClick={() => handleSave('job')}
+                  onClick={() => handleSave("job")}
                   className="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-md"
                 >
                   Save
@@ -433,11 +481,11 @@ export default function TrainerProfileUpdated() {
           </div>
 
           {/* Certificates */}
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-[#7946bb3a] rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Certificates</h3>
-              <Link 
-                href="/trainer/certificates" 
+              <Link
+                href="/trainer/certificates"
                 className="text-red-400 hover:text-red-500 flex items-center gap-2"
               >
                 <FiAward />
@@ -446,8 +494,8 @@ export default function TrainerProfileUpdated() {
             </div>
             <div className="grid grid-cols-1 gap-4">
               {certificates.map((cert) => (
-                <div 
-                  key={`cert-${cert._id}-${Date.now()}`} 
+                <div
+                  key={`cert-${cert._id}-${Date.now()}`}
                   className="border rounded-lg p-4 flex items-start space-x-4"
                 >
                   <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -467,7 +515,9 @@ export default function TrainerProfileUpdated() {
                   </div>
                   <div className="flex-grow">
                     <h4 className="font-bold">{cert.name}</h4>
-                    <p className="text-sm text-gray-600">Issued by: {cert.issuingOrganization || 'Not specified'}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Issued by: {cert.issuingOrganization || "Not specified"}
+                    </p>
                     {isValidImageUrl(cert.url) && (
                       <a
                         href={cert.url}
