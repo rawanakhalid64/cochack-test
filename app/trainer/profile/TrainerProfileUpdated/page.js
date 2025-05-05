@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import instance from "../../../../utils/axios";
 import { FiEdit2, FiAward } from 'react-icons/fi';
 import Link from "next/link";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function TrainerProfileUpdated() {
   const router = useRouter();
@@ -80,38 +81,54 @@ export default function TrainerProfileUpdated() {
     formData.append('file', file);
 
     try {
-      console.log('Uploading image...');
-      const response = await instance.post('/api/v1/upload', formData, {
+      const uploadResponse = await instance.post('/api/v1/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      console.log('Upload response:', response.data);
+      if (!uploadResponse.data || !uploadResponse.data.data) {
+        throw new Error('Failed to get image URL from upload');
+      }
 
-      if (response.data && response.data.data) {
-        const imageUrl = response.data.data;
-        console.log('Uploaded image URL:', imageUrl);
-        
-        // Update the user profile with the new image URL
-        const updateResponse = await instance.patch("/api/v1/users/me", {
-          profilePhoto: imageUrl
-        });
-        
-        console.log('Profile update response:', updateResponse.data);
-        
-        // Update local state with the new image URL
+      const imageUrl = uploadResponse.data.data;
+      
+      const updateResponse = await instance.patch("/api/v1/users/me", {
+        profilePhoto: imageUrl
+      });
+
+      if (updateResponse.data && updateResponse.data.user) {
         setTrainerData(prev => ({
           ...prev,
           profilePhoto: imageUrl
         }));
 
-        // Fetch fresh data to ensure we have the latest state
-        await fetchTrainerData();
+        toast.success('Profile image updated successfully!', {
+          duration: 4000,
+          position: 'top-right',
+          style: {
+            background: '#4CAF50',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+          },
+        });
+      } else {
+        throw new Error('Failed to update profile');
       }
+
     } catch (error) {
-      console.error("Error uploading image:", error);
-      alert('Failed to upload image');
+      console.error("Error updating profile image:", error);
+      toast.error('Failed to update profile image. Please try again.', {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#f44336',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '8px',
+        },
+      });
     }
   };
 
@@ -150,11 +167,29 @@ export default function TrainerProfileUpdated() {
       const response = await instance.patch("/api/v1/users/me", updateData);
       if (response.data && response.data.user) {
         setTrainerData(prev => ({ ...prev, ...response.data.user }));
-        alert('Profile updated successfully');
+        toast.success(`${section.charAt(0).toUpperCase() + section.slice(1)} information updated successfully!`, {
+          duration: 4000,
+          position: 'top-right',
+          style: {
+            background: '#4CAF50',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+          },
+        });
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile. Please try again.', {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#f44336',
+          color: '#fff',
+          padding: '16px',
+          borderRadius: '8px',
+        },
+      });
     }
   };
 
@@ -187,24 +222,25 @@ export default function TrainerProfileUpdated() {
 
   // Profile Image Component
   const ProfileImage = () => {
-    const imageUrl = trainerData.profilePhoto || "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg";
-    console.log('Rendering ProfileImage with URL:', imageUrl);
+    const [imgError, setImgError] = useState(false);
+    const defaultImage = "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg";
+    const imageUrl = !imgError && trainerData.profilePhoto ? trainerData.profilePhoto : defaultImage;
     
     return (
-      <Image
-        src={imageUrl}
-        alt="Profile"
-        width={96}
-        height={96}
-        className="object-cover w-full h-full"
-        onError={(e) => {
-          console.error('Image load error:', e);
-          setTrainerData(prev => ({
-            ...prev,
-            profilePhoto: "https://res.cloudinary.com/dmbd60etr/image/upload/v1746098637/wpdzsxnjj0wvfetokyac.jpg"
-          }));
-        }}
-      />
+      <div className="relative w-24 h-24">
+        <Image
+          src={imageUrl}
+          alt="Profile"
+          width={96}
+          height={96}
+          className="object-cover w-full h-full rounded-lg"
+          onError={() => {
+            console.log('Image failed to load, using default');
+            setImgError(true);
+          }}
+          priority
+        />
+      </div>
     );
   };
 
@@ -214,6 +250,7 @@ export default function TrainerProfileUpdated() {
 
   return (
     <div className="min-h-screen bg-white py-6 px-4 sm:px-6 lg:px-8">
+      <Toaster />
       <div className="max-w-full mx-auto">
         <div className="bg-white">
           <div className="bg-[#2E0D44] p-8 flex justify-between items-center">
