@@ -13,8 +13,6 @@ import instance from "../../utils/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,9 +25,12 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://coachak-backendend.onrender.com";
+    const BASE_URL =
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      "https://coachak-backendend.onrender.com";
 
     try {
+      console.log(email, password);
       console.log("Making request to:", `${BASE_URL}/api/v1/auth/login`);
       const response = await instance.post(`${BASE_URL}/api/v1/auth/login`, {
         email,
@@ -41,27 +42,25 @@ export default function Login() {
       if (data.data.accessToken && data.data.refreshToken) {
         console.log("Login successful");
 
-      
-        Cookies.set("accessToken", data.data.accessToken, { expires: 5 / 24 }); 
-        Cookies.set("refreshToken", data.data.refreshToken, { expires: 7 }); 
+        Cookies.set("accessToken", data.data.accessToken, { expires: 5 / 24 });
+        Cookies.set("refreshToken", data.data.refreshToken, { expires: 7 });
 
-        instance.defaults.headers['Authorization'] = `Bearer ${data.data.accessToken}`;
+        instance.defaults.headers[
+          "Authorization"
+        ] = `Bearer ${data.data.accessToken}`;
         dispatch(setUserData(data.data.user));
 
-      
         const role = data.data.user.role;
-        if (role === "trainer") {
+        if (role.toLowerCase() === "trainer") {
           router.push("/trainer/profile/TrainerProfileUpdated");
-        } else if (role === "client") {
-          router.push("/traineeProfileUpdated");
         } else {
-          router.push("/login");
+          router.push("/traineeProfileUpdated");
         }
       } else {
         toast.error(data.message || "Invalid login credentials.");
       }
     } catch (err) {
-      // console.error(err);
+      console.error(err);
       toast.error(
         err.response?.data?.message || "An error occurred. Please try again."
       );
@@ -71,8 +70,7 @@ export default function Login() {
   };
 
   return (
-   
-      <div className="flex h-screen md:bg-[#E5958E] bg-white">
+    <div className="flex h-screen md:bg-[#E5958E] bg-white">
       <ToastContainer /> {/* Place ToastContainer here */}
       {/* Left Side Section */}
       <div className="flex-1 flex flex-col justify-center items-center bg-white relative z-10 p-6 rounded-tr-[50px] rounded-br-[50px]">
@@ -80,7 +78,9 @@ export default function Login() {
         <form className="w-full max-w-sm space-y-6" onSubmit={handleSubmit}>
           {/* Email Field */}
           <div className="relative">
-            <label className="block mb-1 text-gray-600 font-semibold">Email</label>
+            <label className="block mb-1 text-gray-600 font-semibold">
+              Email
+            </label>
             <AiOutlineMail
               className="absolute left-3 top-10 text-black"
               size={20}
@@ -97,7 +97,9 @@ export default function Login() {
 
           {/* Password Field */}
           <div className="relative">
-            <label className="block mb-1 text-gray-600 font-semibold">Password</label>
+            <label className="block mb-1 text-gray-600 font-semibold">
+              Password
+            </label>
             <FaKey className="absolute left-3 top-10 text-black" size={20} />
             <input
               type={showPassword ? "text" : "password"}
@@ -111,7 +113,11 @@ export default function Login() {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-10 text-black cursor-pointer"
             >
-              {showPassword ? <AiFillEye size={20} /> : <AiFillEyeInvisible size={20} />}
+              {showPassword ? (
+                <AiFillEye size={20} />
+              ) : (
+                <AiFillEyeInvisible size={20} />
+              )}
             </span>
           </div>
 
@@ -131,7 +137,9 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="text-center my-4 text-black">———— Login with ————</div>
+          <div className="text-center my-4 text-black">
+            ———— Login with ————
+          </div>
           <div className="flex justify-center space-x-4">
             <button className="rounded-full p-4 flex justify-center items-center">
               <Image
@@ -157,10 +165,11 @@ export default function Login() {
           </div>
         </form>
       </div>
-
       {/* Right Side Section */}
       <div className="hidden md:flex w-2/5 flex-col justify-center items-center bg-[#E5958E] p-6">
-        <h2 className="text-white text-2xl font-bold mb-4">Welcome To Coachak</h2>
+        <h2 className="text-white text-2xl font-bold mb-4">
+          Welcome To Coachak
+        </h2>
         <Image
           src="https://res.cloudinary.com/dvgqyejfc/image/upload/v1730725463/Sport_family-pana_1_wlszgn.png"
           alt="Welcome Image"
